@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-app-darker text-gray-100;
+  }
+}
+
+@layer components {
+  .task-card {
+    @apply rounded-lg p-2 mb-2 cursor-pointer hover:brightness-110 transition-all;
+  }
+  
+  .sidebar-item {
+    @apply flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-app-hover cursor-pointer;
+  }
+  
+  .time-slot {
+    @apply border-b border-app-light py-4;
+  }
+}
