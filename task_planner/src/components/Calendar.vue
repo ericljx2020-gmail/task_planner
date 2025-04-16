@@ -12,9 +12,9 @@ const events = ref([
   {
     id: 1,
     title: 'Weekly planning',
-    date: '2024-01-21',
+    date: '2025-04-14',
     startTime: '10:00',
-    endTime: '11:00',
+    endTime: '12:00',
     category: 'work',
     completed: false,
     color: 'bg-blue-900/50'
@@ -151,40 +151,47 @@ const handleDateSelect = (event) => {
     </div>
 
     <!-- Days of Week Header -->
-    <div class="calendar-header grid grid-cols-7 text-center text-xs font-semibold border-b pb-2">
+    <div class="calendar-header grid grid-cols-7 text-center text-xs font-semibold border-b border-white/10 pb-2 ml-12">
       <div v-for="day in weekDays" :key="format(day, 'yyyy-MM-dd')">
         {{ formatDay(day) }}
       </div>
     </div>
 
-    <!-- Calendar Grid -->
-    <div class="calendar-grid grid grid-cols-7 border-t h-[calc(24*60px)] overflow-y-auto">
-      <!-- Time slots for each day -->
-      <div 
-        v-for="day in weekDays" 
-        :key="format(day, 'yyyy-MM-dd')"
-        class="day-column border-r relative"
-      >
-        <div 
-          v-for="slot in timeSlots" 
-          :key="format(day, 'yyyy-MM-dd') + '-' + slot.hour"
-          class="time-slot h-[60px] border-b relative group hover:bg-gray-50/5"
-          @click="handleTimeSlotClick(day, slot.hour)"
+    <!-- Calendar + Hour Sidebar Wrapper -->
+    <div class="relative flex">
+      <!-- 1. 左侧小时刻度 -->
+      <div class="absolute left-0 top-0 h-[calc(24*60px)] w-16 text-right">
+        <div
+          v-for="slot in timeSlots"
+          :key="slot.hour"
+          class="h-[60px] flex items-center justify-end pr-4"
         >
-          <!-- Time label (only show on first column) -->
-          <span 
-            v-if="format(day, 'yyyy-MM-dd') === format(weekDays[0], 'yyyy-MM-dd')"
-            class="absolute -left-12 -top-3 text-xs text-gray-500"
-          >
-            {{ slot.label }}
-          </span>
+          <span class="text-xs text-white">{{ slot.label }}</span>
+        </div>
+      </div>
 
-          <!-- Events -->
-          <div v-for="event in getEventsForTimeSlot(day, slot.hour)" :key="event.id">
-            <CalendarEvent 
-              :event="event"
-              @toggle-complete="toggleEventComplete"
-            />
+      <!-- 2. 右侧的原 calendar-grid，只需加一个 ml-16 -->
+      <div
+        class="calendar-grid grid grid-cols-7 border border-white/10 h-[calc(24*60px)] overflow-y-auto mt-2 ml-16"
+      >
+        <div
+          v-for="day in weekDays"
+          :key="format(day, 'yyyy-MM-dd')"
+          class="day-column border-r border-white/10 relative"
+        >
+          <div
+            v-for="slot in timeSlots"
+            :key="format(day, 'yyyy-MM-dd') + '-' + slot.hour"
+            class="time-slot h-[60px] border-b border-white/10 relative group hover:bg-gray-50/5"
+            @click="handleTimeSlotClick(day, slot.hour)"
+          >
+            <!-- 事件渲染保持不变 -->
+            <div v-for="event in getEventsForTimeSlot(day, slot.hour)" :key="event.id">
+              <CalendarEvent
+                :event="event"
+                @toggle-complete="toggleEventComplete"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -204,6 +211,9 @@ const handleDateSelect = (event) => {
 .calendar-grid {
   position: relative;
   margin-left: 3rem; /* Space for time labels */
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .time-slot {
