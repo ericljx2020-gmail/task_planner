@@ -1,7 +1,10 @@
 <script setup>
+import { onMounted } from 'vue';
 import Calendar from './components/Calendar.vue'
 import Sidebar from './components/Sidebar.vue'
 import TaskPanel from './components/TaskPanel.vue'
+
+console.log("App.vue mounted");
 
 const generateHours = () => {
   const hours = [];
@@ -10,6 +13,10 @@ const generateHours = () => {
   }
   return hours;
 };
+
+onMounted(() => {
+  console.log("App component mounted and ready");
+});
 </script>
 
 <template>
@@ -27,31 +34,41 @@ const generateHours = () => {
   </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
+<style>
+/* Global styles */
+:root {
+  --app-dark: #1a1a1a;
+  --app-darker: #121212;
+  --app-light: #2a2a2a;
+  --app-hover: #333333;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--app-darker);
+  color: white;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
+.bg-app-dark {
+  background-color: var(--app-dark);
+}
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
+.bg-app-darker {
+  background-color: var(--app-darker);
+}
 
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+.bg-app-light {
+  background-color: var(--app-light);
+}
+
+.bg-app-hover:hover {
+  background-color: var(--app-hover);
+}
+
+.border-app-light {
+  border-color: var(--app-light);
 }
 </style>

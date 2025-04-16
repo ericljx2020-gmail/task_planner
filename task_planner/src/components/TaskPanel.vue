@@ -1,6 +1,11 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject, computed } from 'vue';
+import { parseISO, isAfter, addDays, isFuture } from 'date-fns';
 
+// Inject the shared events from Calendar component with a fallback empty array
+const calendarEvents = inject('events', ref([]));
+
+// Local task lists
 const dueTasks = ref([
   {
     id: 1,
@@ -39,7 +44,93 @@ const inboxTasks = ref([
   }
 ]);
 
+// Compute the combined task list from calendar events and local tasks
+const combinedDueTasks = computed(() => {
+  // Convert calendar events to task format
+  const today = new Date();
+  const dueSoonThreshold = addDays(today, 3); // Events due within 3 days go to "Due Soon"
+  
+  // Make sure calendarEvents.value exists before filtering
+  const calendarDueTasks = calendarEvents.value
+    ? calendarEvents.value
+        .filter(event => {
+          const eventDate = parseISO(event.date);
+          return isFuture(eventDate) && !isAfter(eventDate, dueSoonThreshold);
+        })
+        .map(event => ({
+          id: event.id,
+          title: event.title,
+          dueDate: event.date,
+          duration: calculateDuration(event.startTime, event.endTime),
+          tag: 'Due soon',
+          completed: event.completed,
+          isCalendarEvent: true // Flag to identify calendar events
+        }))
+    : [];
+  
+  // Combine with local due tasks
+  return [...dueTasks.value, ...calendarDueTasks];
+});
+
+// Compute the inbox tasks
+const combinedInboxTasks = computed(() => {
+  // Convert calendar events to task format
+  const today = new Date();
+  const dueSoonThreshold = addDays(today, 3);
+  
+  // Make sure calendarEvents.value exists before filtering
+  const calendarInboxTasks = calendarEvents.value
+    ? calendarEvents.value
+        .filter(event => {
+          const eventDate = parseISO(event.date);
+          return isAfter(eventDate, dueSoonThreshold);
+        })
+        .map(event => ({
+          id: event.id,
+          title: event.title,
+          dueDate: event.date,
+          duration: calculateDuration(event.startTime, event.endTime),
+          tag: 'Inbox',
+          completed: event.completed,
+          isCalendarEvent: true // Flag to identify calendar events
+        }))
+    : [];
+  
+  // Combine with local inbox tasks
+  return [...inboxTasks.value, ...calendarInboxTasks];
+});
+
+// Calculate duration from start and end time
+function calculateDuration(startTime, endTime) {
+  if (!startTime || !endTime) return '1h'; // Default duration if times are missing
+  
+  const [startHour, startMin = '0'] = startTime.split(':');
+  const [endHour, endMin = '0'] = endTime.split(':');
+  
+  const start = parseInt(startHour) * 60 + parseInt(startMin);
+  const end = parseInt(endHour) * 60 + parseInt(endMin);
+  const durationMinutes = end - start;
+  
+  if (durationMinutes >= 60) {
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  } else {
+    return `${durationMinutes}m`;
+  }
+}
+
 const toggleTaskComplete = (taskId) => {
+  // Check if it's a calendar event
+  if (calendarEvents.value) {
+    const calendarEvent = calendarEvents.value.find(event => event.id === taskId);
+    if (calendarEvent) {
+      calendarEvent.completed = !calendarEvent.completed;
+      return;
+    }
+  }
+  
+  // Otherwise, check local tasks
   const findAndToggle = (tasks) => {
     const task = tasks.value.find(t => t.id === taskId);
     if (task) {
@@ -75,10 +166,10 @@ const toggleTaskComplete = (taskId) => {
       <h3 class="text-sm text-gray-500 font-medium uppercase mb-3">Due Soon</h3>
       <div class="space-y-2">
         <div
-          v-for="task in dueTasks"
+          v-for="task in combinedDueTasks"
           :key="task.id"
           class="task-item p-3 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer"
-          :class="{ 'opacity-50': task.completed }"
+          :class="{ 'opacity-50': task.completed, 'border-l-4 border-blue-500': task.isCalendarEvent }"
         >
           <div class="flex items-start gap-3">
             <input
@@ -107,10 +198,10 @@ const toggleTaskComplete = (taskId) => {
       <h3 class="text-sm text-gray-500 font-medium uppercase mb-3">Inbox</h3>
       <div class="space-y-2">
         <div
-          v-for="task in inboxTasks"
+          v-for="task in combinedInboxTasks"
           :key="task.id"
           class="task-item p-3 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer"
-          :class="{ 'opacity-50': task.completed }"
+          :class="{ 'opacity-50': task.completed, 'border-l-4 border-green-500': task.isCalendarEvent }"
         >
           <div class="flex items-start gap-3">
             <input
@@ -134,4 +225,4 @@ const toggleTaskComplete = (taskId) => {
       </div>
     </div>
   </section>
-</template> 
+</template>

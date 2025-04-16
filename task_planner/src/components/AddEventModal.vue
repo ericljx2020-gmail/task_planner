@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { format } from 'date-fns';
 
 const props = defineProps({
@@ -12,9 +12,22 @@ const props = defineProps({
 const emit = defineEmits(['close', 'add-event']);
 
 const title = ref('');
-const startTime = ref(`${props.selectedSlot.hour}:00`);
-const endTime = ref(`${props.selectedSlot.hour + 1}:00`);
+const startTime = ref('');
+const endTime = ref('');
 const category = ref('work');
+
+// Initialize times when selectedSlot changes
+watch(() => props.selectedSlot, (newSlot) => {
+  if (newSlot && newSlot.hour !== undefined) {
+    // Format the hour with leading zero if needed
+    const hour = newSlot.hour.toString().padStart(2, '0');
+    startTime.value = `${hour}:00`;
+    
+    // Set end time to 1 hour later
+    const endHour = (newSlot.hour + 1) % 24;
+    endTime.value = `${endHour.toString().padStart(2, '0')}:00`;
+  }
+}, { immediate: true });
 
 const categories = [
   { id: 'work', label: 'Work', color: 'bg-blue-900/50' },
@@ -24,11 +37,19 @@ const categories = [
 ];
 
 const selectedCategory = computed(() => {
-  return categories.find(c => c.id === category.value);
+  return categories.find(c => c.id === category.value) || categories[0];
 });
 
 const handleSubmit = () => {
-  if (!title.value) return;
+  if (!title.value) {
+    alert('Please enter a title for the event');
+    return;
+  }
+
+  if (!props.selectedSlot || !props.selectedSlot.date) {
+    console.error('No date selected');
+    return;
+  }
 
   emit('add-event', {
     title: title.value,
@@ -38,12 +59,22 @@ const handleSubmit = () => {
     category: category.value,
     color: selectedCategory.value.color
   });
+  
+  // Reset form
+  title.value = '';
+};
+
+const closeModal = () => {
+  emit('close');
 };
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center">
-    <div class="bg-app-dark p-6 rounded-xl w-full max-w-md">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div 
+      class="bg-app-dark p-6 rounded-xl w-full max-w-md"
+      @click.stop
+    >
       <h3 class="text-xl font-semibold mb-4">Add New Event</h3>
       
       <form @submit.prevent="handleSubmit" class="space-y-4">
@@ -54,6 +85,7 @@ const handleSubmit = () => {
             type="text"
             class="w-full px-3 py-2 bg-app-darker rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="Event title"
+            autofocus
           >
         </div>
 
@@ -99,7 +131,7 @@ const handleSubmit = () => {
           <button
             type="button"
             class="px-4 py-2 bg-app-light rounded-lg hover:bg-app-hover"
-            @click="emit('close')"
+            @click="closeModal"
           >
             Cancel
           </button>
@@ -113,4 +145,10 @@ const handleSubmit = () => {
       </form>
     </div>
   </div>
-</template> 
+</template>
+
+<style scoped>
+input {
+  color: white;
+}
+</style>
