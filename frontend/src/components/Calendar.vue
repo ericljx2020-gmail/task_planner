@@ -3,44 +3,14 @@ import { ref, computed, provide, onMounted } from 'vue';
 import { format, startOfWeek, addDays, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, isSameDay } from 'date-fns';
 import CalendarEvent from './CalendarEvent.vue';
 import AddEventModal from './AddEventModal.vue';
+import api from '../services/api';
 
 const currentDate = ref(new Date());
 const showAddEventModal = ref(false);
 const selectedTimeSlot = ref(null);
 
 // Shared events store (will be synchronized with TaskPanel)
-const events = ref([
-  {
-    id: 1,
-    title: 'Weekly planning',
-    date: '2025-04-14',
-    startTime: '10:00',
-    endTime: '12:00',
-    category: 'work',
-    completed: false,
-    color: 'bg-blue-900/50'
-  },
-  {
-    id: 2,
-    title: 'TestFlight submission',
-    date: '2024-01-21',
-    startTime: '11:00',
-    endTime: '12:00',
-    category: 'work',
-    completed: false,
-    color: 'bg-gray-700/50'
-  },
-  {
-    id: 3,
-    title: 'Update documentation',
-    date: '2024-01-21',
-    startTime: '13:00',
-    endTime: '14:00',
-    category: 'work',
-    completed: false,
-    color: 'bg-green-900/50'
-  }
-]);
+const events = ref([]);
 
 // Provide the events to child components
 provide('events', events);
@@ -67,10 +37,10 @@ const timeSlots = computed(() => {
 const eventsOverlap = (event1, event2) => {
   if (event1.date !== event2.date) return false;
   
-  const start1 = parseInt(event1.startTime.split(':')[0]) * 60 + parseInt(event1.startTime.split(':')[1] || 0);
-  const end1 = parseInt(event1.endTime.split(':')[0]) * 60 + parseInt(event1.endTime.split(':')[1] || 0);
-  const start2 = parseInt(event2.startTime.split(':')[0]) * 60 + parseInt(event2.startTime.split(':')[1] || 0);
-  const end2 = parseInt(event2.endTime.split(':')[0]) * 60 + parseInt(event2.endTime.split(':')[1] || 0);
+  const start1 = parseInt(event1.start_time.split(':')[0]) * 60 + parseInt(event1.start_time.split(':')[1] || 0);
+  const end1 = parseInt(event1.end_time.split(':')[0]) * 60 + parseInt(event1.end_time.split(':')[1] || 0);
+  const start2 = parseInt(event2.start_time.split(':')[0]) * 60 + parseInt(event2.start_time.split(':')[1] || 0);
+  const end2 = parseInt(event2.end_time.split(':')[0]) * 60 + parseInt(event2.end_time.split(':')[1] || 0);
   
   return (start1 < end2 && start2 < end1);
 };
@@ -131,9 +101,9 @@ const getEventsForTimeSlot = (date, hour) => {
   const dayEnd = endOfDay(dayStart);
   
   return events.value.filter(event => {
-    const eventDate = parseISO(`${event.date}T${event.startTime}`);
+    const eventDate = parseISO(`${event.date}T${event.start_time}`);
     return isWithinInterval(eventDate, { start: dayStart, end: dayEnd }) &&
-           parseInt(event.startTime.split(':')[0]) === hour;
+           parseInt(event.start_time.split(':')[0]) === hour;
   });
 };
 
@@ -146,29 +116,74 @@ const handleTimeSlotClick = (date, hour) => {
   showAddEventModal.value = true;
 };
 
-const addEvent = (newEvent) => {
+const addEvent = async (newEvent) => {
   console.log('Adding new event:', newEvent);
-  // Generate a unique ID
-  const eventId = Date.now();
   
-  // Create the new event
-  const createdEvent = {
-    id: eventId,
-    ...newEvent,
-    completed: false
-  };
-  
-  // Add to the events array
-  events.value.push(createdEvent);
-  
-  showAddEventModal.value = false;
-  selectedTimeSlot.value = null;
+  try {
+    // Format event data for the API
+    const eventData = {
+      title: newEvent.title,
+      date: newEvent.date,
+      start_time: newEvent.startTime,
+      end_time: newEvent.endTime,
+      category: newEvent.category,
+      color: newEvent.color,
+      completed: false
+    };
+    
+    // Send to the API
+    const createdEvent = await api.createEvent(eventData);
+    
+    // Update local events
+    events.value.push({
+      ...createdEvent,
+      startTime: createdEvent.start_time, // Keep compatibility with frontend naming
+      endTime: createdEvent.end_time
+    });
+    
+    showAddEventModal.value = false;
+    selectedTimeSlot.value = null;
+  } catch (error) {
+    console.error('Error creating event:', error);
+    // Handle error (show notification, etc.)
+  }
 };
 
-const toggleEventComplete = (eventId) => {
+const toggleEventComplete = async (eventId) => {
   const event = events.value.find(e => e.id === eventId);
   if (event) {
+    // Toggle locally first for responsive UI
     event.completed = !event.completed;
+    
+    try {
+      // Send update to API
+      await api.updateEvent(eventId, {
+        ...event,
+        start_time: event.startTime || event.start_time,
+        end_time: event.endTime || event.end_time
+      });
+    } catch (error) {
+      console.error('Error updating event completion status:', error);
+      // Revert the local change if API call fails
+      event.completed = !event.completed;
+    }
+  }
+};
+
+// Load events from the backend
+const loadEvents = async () => {
+  try {
+    const fetchedEvents = await api.getEvents();
+    
+    // Convert API format to frontend format
+    events.value = fetchedEvents.map(event => ({
+      ...event,
+      startTime: event.start_time, // Add frontend property names for compatibility
+      endTime: event.end_time
+    }));
+  } catch (error) {
+    console.error('Error loading events:', error);
+    // Handle error (show notification, etc.)
   }
 };
 
@@ -197,8 +212,9 @@ const handleDateSelect = (event) => {
   currentDate.value = selectedDate;
 };
 
-// Mount hook to scroll to current time
+// Mount hook to scroll to current time and load events
 onMounted(() => {
+  scrollToCurrentTime();
   setTimeout(scrollToCurrentTime, 100);
 });
 </script>
