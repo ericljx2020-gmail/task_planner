@@ -220,7 +220,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="flex-1 p-4 overflow-auto">
+  <section class="flex flex-col flex-1 p-4">
     <!-- Calendar Header -->
     <div class="calendar-header flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold">{{ format(currentDate, 'MMMM yyyy') }}</h2>
@@ -249,14 +249,14 @@ onMounted(() => {
     </div>
 
     <!-- Days of Week Header -->
-    <div class="calendar-days grid grid-cols-7 text-center text-xs font-semibold border-b border-white/10 pb-2 ml-16">
+    <div class="calendar-days sticky top-0 z-10 bg-app-dark grid grid-cols-7 text-center text-xs font-semibold border-b border-white/10 pb-2 ml-16">
       <div v-for="day in weekDays" :key="format(day, 'yyyy-MM-dd')">
         {{ formatDay(day) }}
       </div>
     </div>
 
-    <!-- Calendar + Hour Sidebar Wrapper -->
-    <div class="calendar-wrapper relative">
+    <!-- Calendar + Hour Sidebar Wrapper（可滚动区域）-->
+    <div class="calendar-wrapper flex-1 relative overflow-auto">
       <!-- Hours sidebar -->
       <div class="hours-sidebar absolute left-0 top-0 h-[calc(24*60px)] w-16 text-right">
         <div
@@ -314,6 +314,8 @@ onMounted(() => {
 .calendar-wrapper {
   position: relative;
   width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .calendar-grid {
