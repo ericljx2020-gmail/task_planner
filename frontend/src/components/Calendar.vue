@@ -134,18 +134,23 @@ const addEvent = async (newEvent) => {
     // Send to the API
     const createdEvent = await api.createEvent(eventData);
     
-    // Update local events
-    events.value.push({
-      ...createdEvent,
-      startTime: createdEvent.start_time, // Keep compatibility with frontend naming
-      endTime: createdEvent.end_time
-    });
-    
-    showAddEventModal.value = false;
-    selectedTimeSlot.value = null;
+    if (createdEvent.id) {
+      // Update local events
+      events.value.push({
+        ...createdEvent,
+        startTime: createdEvent.start_time, // Keep compatibility with frontend naming
+        endTime: createdEvent.end_time
+      });
+      
+      showAddEventModal.value = false;
+      selectedTimeSlot.value = null;
+    } else {
+      console.error('Error creating event: No event ID returned', createdEvent);
+      alert('Error creating event. Please try again or log in if your session has expired.');
+    }
   } catch (error) {
     console.error('Error creating event:', error);
-    // Handle error (show notification, etc.)
+    alert('Error creating event. Please try again or log in if your session has expired.');
   }
 };
 

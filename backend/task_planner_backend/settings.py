@@ -135,6 +135,14 @@ CORS_ALLOW_ALL_ORIGINS = True  # In production, specify frontend origin instead
 #     "http://localhost:5173",  # Vue.js dev server
 # ]
 
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access to CSRF cookie
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
+
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [

@@ -51,7 +51,14 @@ def register_user(request):
         # Create a profile for the user
         UserProfile.objects.create(user=user)
         
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Create response with user data
+        response = Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        # Ensure CSRF cookie is set
+        from django.middleware.csrf import get_token
+        get_token(request)
+        
+        return response
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
@@ -63,13 +70,23 @@ def login_user(request):
     
     if user:
         login(request, user)
-        return Response({
+        # Prepare response with user data
+        response_data = {
             'id': user.id,
             'username': user.username,
             'email': user.email,
             'first_name': user.first_name,
             'last_name': user.last_name
-        }, status=status.HTTP_200_OK)
+        }
+        
+        # Create response object
+        response = Response(response_data, status=status.HTTP_200_OK)
+        
+        # Ensure CSRF cookie is set
+        from django.middleware.csrf import get_token
+        get_token(request)
+        
+        return response
     return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
@@ -83,3 +100,14 @@ def logout_user(request):
 def get_user_info(request):
     serializer = UserSerializer(request.user)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_csrf_token(request):
+    """
+    View to get a CSRF token cookie.
+    Frontend can call this endpoint to get a CSRF token before making authenticated requests.
+    """
+    from django.middleware.csrf import get_token
+    get_token(request)
+    return Response({"detail": "CSRF cookie set"}, status=status.HTTP_200_OK)

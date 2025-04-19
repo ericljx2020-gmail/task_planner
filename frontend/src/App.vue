@@ -45,8 +45,19 @@ const handleLogout = async () => {
 };
 
 // Check authentication on component mount
-onMounted(() => {
-  checkAuth();
+onMounted(async () => {
+  // First fetch the CSRF token
+  try {
+    await fetch('http://localhost:8000/api/csrf-token/', {
+      method: 'GET',
+      credentials: 'include'
+    });
+  } catch (error) {
+    console.error('Error fetching CSRF token:', error);
+  }
+  
+  // Then check authentication
+  await checkAuth();
 });
 </script>
 
