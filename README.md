@@ -14,6 +14,7 @@ A full-stack task planning application with calendar integration, built with Vue
 - Node.js and npm
 - Python 3.x
 - pip (Python package manager)
+- PostgreSQL 16 (or later)
 
 ### Backend Setup
 
@@ -35,10 +36,33 @@ A full-stack task planning application with calendar integration, built with Vue
 
 3. Install the required dependencies:
    ```
-   pip install django djangorestframework django-cors-headers
+   pip install django djangorestframework django-cors-headers psycopg2-binary
    ```
 
-4. Run migrations:
+4. Start PostgreSQL service:
+   ```
+   # On macOS with Homebrew
+   brew services start postgresql@16
+   
+   # On Windows
+   # PostgreSQL service should be running automatically
+   # Or use the SQL Server Configuration Manager
+   
+   # On Linux
+   sudo systemctl start postgresql
+   ```
+
+5. Create a PostgreSQL database:
+   ```
+   # Create a PostgreSQL user (first time only)
+   createuser -s postgres
+   # Set a password for the postgres user (first time only)
+   psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+   # Create the database
+   createdb -U postgres task_planner
+   ```
+
+6. Run migrations:
    ```
    python manage.py makemigrations
    python manage.py migrate

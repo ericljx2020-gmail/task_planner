@@ -11,6 +11,7 @@ console.log("App.vue mounted");
 // User authentication state
 const isAuthenticated = ref(false);
 const user = ref(null);
+const isLoading = ref(true); // Add loading state
 
 // Check if user is logged in on page load
 const checkAuth = async () => {
@@ -24,6 +25,9 @@ const checkAuth = async () => {
   } catch (error) {
     console.error('Authentication check failed:', error);
     // Not authenticated or error, leave as is
+  } finally {
+    // Regardless of result, we're done loading
+    isLoading.value = false;
   }
 };
 
@@ -47,6 +51,7 @@ const handleLogout = async () => {
 // Check authentication on component mount
 onMounted(async () => {
   // First fetch the CSRF token
+  isLoading.value = true; // Start loading
   try {
     await fetch('http://localhost:8000/api/csrf-token/', {
       method: 'GET',
@@ -63,12 +68,21 @@ onMounted(async () => {
 
 <template>
   <div class="app h-screen flex flex-col bg-app-dark text-white">
-    <div v-if="!isAuthenticated" class="flex items-center justify-center h-screen">
+    <!-- Loading state -->
+    <div v-if="isLoading" class="flex items-center justify-center h-screen">
+      <div class="animate-pulse text-blue-400 text-xl">
+        Loading app...
+      </div>
+    </div>
+    
+    <!-- Login form -->
+    <div v-else-if="!isAuthenticated" class="flex items-center justify-center h-screen">
       <div class="w-full max-w-md p-6 bg-app-dark shadow-lg rounded-lg border border-app-light">
         <LoginForm @login-success="handleLoginSuccess" />
       </div>
     </div>
     
+    <!-- Main app -->
     <template v-else>
       <header class="border-b border-app-light p-3 flex justify-between items-center">
         <h1 class="text-xl font-bold">Task Planner</h1>
