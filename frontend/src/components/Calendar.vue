@@ -208,6 +208,55 @@ const loadEvents = async () => {
   }
 };
 
+// Event was dragged to a new time
+const handleEventUpdate = async (updatedEvent) => {
+  // Find the event in our events array
+  const originalEvent = events.value.find(e => e.id === updatedEvent.id);
+  
+  if (originalEvent) {
+    try {
+      // Create a new object for the API update
+      const updatedEventData = {
+        ...originalEvent,
+        start_time: updatedEvent.startTime,
+        end_time: updatedEvent.endTime
+      };
+
+      // If the event was dragged to a different day
+      if (updatedEvent.dayOffset && updatedEvent.dayOffset !== 0) {
+        // Parse the current date
+        const currentDate = parseISO(originalEvent.date);
+        // Add the day offset to get the new date
+        const newDate = addDays(currentDate, updatedEvent.dayOffset);
+        // Format the new date as yyyy-MM-dd
+        updatedEventData.date = format(newDate, 'yyyy-MM-dd');
+      }
+      
+      // Important: Update the local event object first, before the API call
+      // This ensures the UI updates immediately 
+      Object.assign(originalEvent, {
+        startTime: updatedEvent.startTime,
+        endTime: updatedEvent.endTime,
+        start_time: updatedEvent.startTime,
+        end_time: updatedEvent.endTime,
+        date: updatedEventData.date || originalEvent.date
+      });
+      
+      // Now send the update to the API
+      await api.updateEvent(updatedEvent.id, updatedEventData);
+      
+      // After API success, refresh events from the server for consistency
+      await loadEvents();
+    } catch (error) {
+      console.error('Error updating event time:', error);
+      alert('Error updating event time. Please try again.');
+      
+      // Refresh events from the server to restore correct state after error
+      await loadEvents();
+    }
+  }
+};
+
 // Scroll to current time on component mount
 const scrollToCurrentTime = () => {
   const now = new Date();
@@ -331,6 +380,7 @@ watchEffect(() => {
               :total-conflicts="event.totalConflicts || 1"
               @toggle-complete="toggleEventComplete"
               @delete-event="deleteEvent"
+              @update:event="handleEventUpdate"
             />
           </template>
         </div>
@@ -395,12 +445,24 @@ watchEffect(() => {
   border-right: 1px solid var(--grid-line-color);
   border-bottom: 1px solid var(--grid-line-color);
   z-index: 1;
+  user-select: none; /* Prevent selection during drag */
 }
 
 .time-slot {
   transition: background-color 0.2s;
   z-index: 2;
   border-bottom: 1px solid var(--grid-line-color);
+  position: relative;
+}
+
+/* Remove quarter-hour lines */
+.time-slot::after {
+  display: none;
+}
+
+/* Remove half-hour lines */
+.time-slot::before {
+  display: none;
 }
 
 .time-slot:hover {
