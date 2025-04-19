@@ -1,5 +1,6 @@
 <script setup>
 import { defineProps, defineEmits, computed } from 'vue';
+import { createConfetti } from '../utils/confetti';
 
 const props = defineProps({
   event: {
@@ -18,8 +19,14 @@ const props = defineProps({
 
 const emit = defineEmits(['toggle-complete', 'delete-event']);
 
-const toggleComplete = () => {
-  emit('toggle-complete', props.event.id);
+const handleCheckbox = (event) => {
+  // Show confetti animation
+  createConfetti(event.target);
+  
+  // Delay to let the confetti show before the item disappears
+  setTimeout(() => {
+    emit('delete-event', props.event.id);
+  }, 2000); // Increased to 2 seconds to show more of the confetti animation
 };
 
 const deleteEvent = () => {
@@ -98,8 +105,7 @@ const eventStyles = computed(() => {
   <div
     class="task-card calendar-event absolute rounded-md px-2 py-1 text-xs overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
     :class="[
-      event.color || 'default-event-color',
-      { 'completed-event': event.completed }
+      event.color || 'default-event-color'
     ]"
     :style="{
       top: `${startPosition}px`,
@@ -110,12 +116,13 @@ const eventStyles = computed(() => {
     }"
   >
     <div class="flex justify-between items-center mb-1">
-      <input
-        type="checkbox"
-        :checked="event.completed"
-        @click.stop="toggleComplete"
-        class="mr-1 h-3 w-3 event-checkbox"
-      />
+      <div class="checkbox-container">
+        <input
+          type="checkbox"
+          @click.stop="(event) => handleCheckbox(event)"
+          class="mr-1 h-3 w-3 event-checkbox"
+        />
+      </div>
       <button 
         @click.stop="deleteEvent" 
         class="text-gray-300 hover:text-white transition-colors ml-auto delete-button"
@@ -157,11 +164,6 @@ const eventStyles = computed(() => {
   font-size: 0.75rem;
 }
 
-.completed-event {
-  text-decoration: line-through;
-  opacity: 0.6;
-}
-
 .default-event-color {
   background-color: var(--event-bg);
 }
@@ -175,7 +177,16 @@ const eventStyles = computed(() => {
   opacity: 1;
 }
 
+.checkbox-container {
+  position: relative;
+}
+
 .event-checkbox {
   cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.event-checkbox:hover {
+  transform: scale(1.2);
 }
 </style>

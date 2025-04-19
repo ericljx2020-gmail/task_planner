@@ -2,6 +2,7 @@
 import { ref, inject, computed, onMounted, watchEffect } from 'vue';
 import { parseISO, isAfter, addDays, isFuture } from 'date-fns';
 import api from '../services/api';
+import { createConfetti } from '../utils/confetti';
 
 // Inject the shared events from Calendar component with a fallback empty array
 const calendarEvents = inject('events', ref([]));
@@ -87,59 +88,40 @@ function calculateDuration(startTime, endTime) {
   }
 }
 
-const toggleTaskComplete = async (taskId) => {
-  // Check if it's a calendar event
-  if (calendarEvents.value) {
-    const calendarEvent = calendarEvents.value.find(event => event.id === taskId);
-    if (calendarEvent) {
-      try {
-        // Update on the backend
-        await api.updateEvent(taskId, {
-          ...calendarEvent,
-          completed: !calendarEvent.completed,
-          start_time: calendarEvent.start_time || calendarEvent.startTime,
-          end_time: calendarEvent.end_time || calendarEvent.endTime
-        });
-        
-        // No need to manipulate the local state
-        // The Calendar component will refresh the events
-        
-        return;
-      } catch (error) {
-        console.error('Error updating calendar event:', error);
-        alert('Error updating task. Please try again.');
-        return;
-      }
-    }
-  }
+const handleTaskCheckbox = async (event, taskId) => {
+  // Show confetti animation when the checkbox is clicked
+  createConfetti(event.target);
   
-  // Handle tasks from the task lists
-  const findAndToggleTask = async (tasksList) => {
-    const task = tasksList.value.find(t => t.id === taskId);
-    if (task) {
-      try {
-        // Update on the backend
-        await api.updateTask(taskId, {
-          ...task,
-          completed: !task.completed,
-          due_date: task.dueDate
-        });
-        
-        // Refresh tasks from the server
-        await loadTasks();
-        return true;
-      } catch (error) {
-        console.error('Error updating task:', error);
-        alert('Error updating task. Please try again.');
-        return false;
+  setTimeout(async () => {
+    // Check if it's a calendar event
+    if (calendarEvents.value) {
+      const calendarEvent = calendarEvents.value.find(event => event.id === taskId);
+      if (calendarEvent) {
+        try {
+          // Delete the event instead of marking it completed
+          await api.deleteEvent(taskId);
+          
+          // Calendar component will refresh the events
+          return;
+        } catch (error) {
+          console.error('Error deleting calendar event:', error);
+          alert('Error deleting event. Please try again.');
+          return;
+        }
       }
     }
-    return false;
-  };
-
-  if (!await findAndToggleTask(dueTasks)) {
-    await findAndToggleTask(inboxTasks);
-  }
+    
+    // Delete the task instead of marking it completed
+    try {
+      await api.deleteTask(taskId);
+      
+      // Refresh tasks from the server
+      await loadTasks();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert('Error deleting task. Please try again.');
+    }
+  }, 2000); // Increased to 2 seconds to show more of the confetti animation
 };
 
 // Delete a task
@@ -335,17 +317,18 @@ const handleAddTask = async () => {
           v-for="task in combinedDueTasks"
           :key="task.id"
           class="task-item p-3 rounded-lg cursor-pointer group"
-          :class="{ 'completed': task.completed, 'calendar-event': task.isCalendarEvent }"
+          :class="{ 'calendar-event': task.isCalendarEvent }"
         >
-          <div class="flex items-start gap-3">
-            <input
-              type="checkbox"
-              :checked="task.completed"
-              class="task-checkbox mt-1"
-              @change="toggleTaskComplete(task.id)"
-            >
+          <div class="flex items-start gap-3 relative">
+            <div class="checkbox-container">
+              <input
+                type="checkbox"
+                class="task-checkbox mt-1"
+                @click="(event) => handleTaskCheckbox(event, task.id)"
+              >
+            </div>
             <div class="flex-grow">
-              <h4 class="task-title font-medium" :class="{ 'line-through': task.completed }">
+              <h4 class="task-title font-medium">
                 {{ task.title }}
               </h4>
               <div class="task-details flex gap-2 mt-1 text-sm">
@@ -376,17 +359,18 @@ const handleAddTask = async () => {
           v-for="task in combinedInboxTasks"
           :key="task.id"
           class="task-item p-3 rounded-lg cursor-pointer group"
-          :class="{ 'completed': task.completed, 'calendar-event-inbox': task.isCalendarEvent }"
+          :class="{ 'calendar-event-inbox': task.isCalendarEvent }"
         >
-          <div class="flex items-start gap-3">
-            <input
-              type="checkbox"
-              :checked="task.completed"
-              class="task-checkbox mt-1"
-              @change="toggleTaskComplete(task.id)"
-            >
+          <div class="flex items-start gap-3 relative">
+            <div class="checkbox-container">
+              <input
+                type="checkbox"
+                class="task-checkbox mt-1"
+                @click="(event) => handleTaskCheckbox(event, task.id)"
+              >
+            </div>
             <div class="flex-grow">
-              <h4 class="task-title font-medium" :class="{ 'line-through': task.completed }">
+              <h4 class="task-title font-medium">
                 {{ task.title }}
               </h4>
               <div class="task-details flex gap-2 mt-1 text-sm">
@@ -469,10 +453,6 @@ const handleAddTask = async () => {
   box-shadow: 0 2px 8px var(--shadow-color);
 }
 
-.task-item.completed {
-  opacity: 0.5;
-}
-
 .task-title {
   color: var(--text-primary);
 }
@@ -481,8 +461,18 @@ const handleAddTask = async () => {
   color: var(--text-secondary);
 }
 
+.checkbox-container {
+  position: relative;
+}
+
 .task-checkbox {
   accent-color: var(--primary-color);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.task-checkbox:hover {
+  transform: scale(1.2);
 }
 
 .delete-button {

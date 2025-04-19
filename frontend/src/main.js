@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import './assets/main.css'
 import './assets/theme.css'
+import './assets/confetti.css'
 
 // Initialize theme before app mount
 const initTheme = () => {
