@@ -35,10 +35,12 @@ export function useTheme() {
       root.style.setProperty('--text-primary', '#ffffff');
       root.style.setProperty('--text-secondary', '#a0a0a0');
       root.style.setProperty('--border-color', '#333333');
-      root.style.setProperty('--event-bg', 'rgba(82, 158, 212, 0.8)');
-      root.style.setProperty('--event-bg-hover', 'rgba(82, 158, 212, 0.9)');
+      root.style.setProperty('--event-bg', 'rgba(247, 185, 219, 0.8)');
+      root.style.setProperty('--event-bg-hover', 'rgba(100, 181, 246, 0.9)');
       root.style.setProperty('--shadow-color', 'rgba(0, 0, 0, 0.3)');
       root.style.setProperty('--grid-line-color', 'rgba(255, 255, 255, 0.1)');
+      root.style.setProperty('--active-sidebar-bg', '#3a3a3a');
+      root.style.setProperty('--navbar-left-border', 'rgb(4, 240, 4)');
     } else {
       // Apply light theme class
       root.classList.add('light-theme');
@@ -53,10 +55,12 @@ export function useTheme() {
       root.style.setProperty('--text-primary', '#333333');
       root.style.setProperty('--text-secondary', '#666666');
       root.style.setProperty('--border-color', '#dddddd');
-      root.style.setProperty('--event-bg', 'rgba(82, 158, 212, 0.7)');
-      root.style.setProperty('--event-bg-hover', 'rgba(82, 158, 212, 0.8)');
+      root.style.setProperty('--event-bg', 'rgba(233, 248, 249, 0.8)');
+      root.style.setProperty('--event-bg-hover', 'rgba(33, 150, 243, 0.7)');
       root.style.setProperty('--shadow-color', 'rgba(0, 0, 0, 0.1)');
       root.style.setProperty('--grid-line-color', 'rgba(0, 0, 0, 0.1)');
+      root.style.setProperty('--active-sidebar-bg', '#d1d1d1');
+      root.style.setProperty('--navbar-left-border', 'rgb(4, 5, 4)');
     }
   };
   

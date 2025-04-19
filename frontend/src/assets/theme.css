@@ -11,6 +11,7 @@
   --event-bg-hover: rgba(82, 158, 212, 0.9);
   --shadow-color: rgba(0, 0, 0, 0.3);
   --grid-line-color: rgba(255, 255, 255, 0.1);
+  --navbar-left-border: rgb(4, 240, 4);
   
   /* Common variables that don't change between themes */
   --primary-color: #529ed4;

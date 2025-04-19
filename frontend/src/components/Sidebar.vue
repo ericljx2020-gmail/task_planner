@@ -57,8 +57,9 @@ const setActive = (iconId) => {
 }
 
 .nav-button.active {
-  background-color: var(--primary-color, #529ed4);
-  color: white;
+  background-color: var(--active-sidebar-bg);
+  color: var(--text-primary);
+  border-left: 3px solid var(--navbar-left-border);
 }
 
 .account-button {

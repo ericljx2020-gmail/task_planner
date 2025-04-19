@@ -153,7 +153,7 @@ const eventStyles = computed(() => {
 }
 
 .event-time {
-  color: var(--text-secondary, #e1e1e1);
+  color: var(--text-primary, #e1e1e1);
   font-size: 0.75rem;
 }
 
