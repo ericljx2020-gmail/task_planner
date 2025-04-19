@@ -30,10 +30,10 @@ watch(() => props.selectedSlot, (newSlot) => {
 }, { immediate: true });
 
 const categories = [
-  { id: 'work', label: 'Work', color: 'bg-blue-900/50' },
-  { id: 'personal', label: 'Personal', color: 'bg-yellow-900/50' },
-  { id: 'family', label: 'Family', color: 'bg-green-900/50' },
-  { id: 'travel', label: 'Travel', color: 'bg-purple-900/50' }
+  { id: 'work', label: 'Work', color: 'category-work' },
+  { id: 'personal', label: 'Personal', color: 'category-personal' },
+  { id: 'family', label: 'Family', color: 'category-family' },
+  { id: 'travel', label: 'Travel', color: 'category-travel' }
 ];
 
 const selectedCategory = computed(() => {
@@ -70,9 +70,9 @@ const closeModal = () => {
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="modal-overlay fixed inset-0 flex items-center justify-center z-50">
     <div 
-      class="bg-app-dark p-6 rounded-xl w-full max-w-md"
+      class="modal-container p-6 rounded-xl w-full max-w-md"
       @click.stop
     >
       <h3 class="text-xl font-semibold mb-4">Add New Event</h3>
@@ -83,7 +83,7 @@ const closeModal = () => {
           <input 
             v-model="title"
             type="text"
-            class="w-full px-3 py-2 bg-app-darker rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            class="modal-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="Event title"
             autofocus
           >
@@ -95,7 +95,7 @@ const closeModal = () => {
             <input 
               v-model="startTime"
               type="time"
-              class="w-full px-3 py-2 bg-app-darker rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              class="modal-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             >
           </div>
           <div>
@@ -103,7 +103,7 @@ const closeModal = () => {
             <input 
               v-model="endTime"
               type="time"
-              class="w-full px-3 py-2 bg-app-darker rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              class="modal-input w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             >
           </div>
         </div>
@@ -115,10 +115,10 @@ const closeModal = () => {
               v-for="cat in categories"
               :key="cat.id"
               type="button"
-              class="px-4 py-2 rounded-lg text-sm text-left"
+              class="category-button px-4 py-2 rounded-lg text-sm text-left"
               :class="[
                 cat.color,
-                category === cat.id ? 'ring-2 ring-white' : ''
+                category === cat.id ? 'category-selected' : ''
               ]"
               @click="category = cat.id"
             >
@@ -130,14 +130,14 @@ const closeModal = () => {
         <div class="flex justify-end gap-2 mt-6">
           <button
             type="button"
-            class="px-4 py-2 bg-app-light rounded-lg hover:bg-app-hover"
+            class="cancel-button px-4 py-2 rounded-lg"
             @click="closeModal"
           >
             Cancel
           </button>
           <button
             type="submit"
-            class="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700"
+            class="submit-button px-4 py-2 rounded-lg"
           >
             Add Event
           </button>
@@ -148,7 +148,107 @@ const closeModal = () => {
 </template>
 
 <style scoped>
-input {
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  transition: var(--theme-transition);
+}
+
+.modal-container {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: 0 8px 24px var(--shadow-color);
+  transition: var(--theme-transition);
+}
+
+.modal-input {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  transition: var(--theme-transition);
+}
+
+.modal-input:focus {
+  border-color: var(--primary-color);
+}
+
+.category-button {
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: var(--theme-transition);
+}
+
+.category-selected {
+  box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+.category-work {
+  background-color: rgba(30, 64, 175, 0.3);
+}
+
+.category-personal {
+  background-color: rgba(180, 83, 9, 0.3);
+}
+
+.category-family {
+  background-color: rgba(21, 128, 61, 0.3);
+}
+
+.category-travel {
+  background-color: rgba(107, 33, 168, 0.3);
+}
+
+.cancel-button {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: var(--theme-transition);
+}
+
+.cancel-button:hover {
+  background-color: var(--bg-primary);
+}
+
+.submit-button {
+  background-color: var(--primary-color);
   color: white;
+  transition: var(--theme-transition);
+}
+
+.submit-button:hover {
+  opacity: 0.9;
+}
+
+/* For dark mode, make colors more vivid */
+:root.dark-theme .category-work {
+  background-color: rgba(59, 130, 246, 0.5);
+}
+
+:root.dark-theme .category-personal {
+  background-color: rgba(245, 158, 11, 0.5);
+}
+
+:root.dark-theme .category-family {
+  background-color: rgba(16, 185, 129, 0.5);
+}
+
+:root.dark-theme .category-travel {
+  background-color: rgba(139, 92, 246, 0.5);
+}
+
+/* For light mode, make colors slightly muted */
+:root.light-theme .category-work {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+:root.light-theme .category-personal {
+  background-color: rgba(245, 158, 11, 0.2);
+}
+
+:root.light-theme .category-family {
+  background-color: rgba(16, 185, 129, 0.2);
+}
+
+:root.light-theme .category-travel {
+  background-color: rgba(139, 92, 246, 0.2);
 }
 </style>
