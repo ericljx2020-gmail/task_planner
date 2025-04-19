@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, provide, onMounted } from 'vue';
+import { ref, computed, provide, onMounted, watchEffect } from 'vue';
 import { format, startOfWeek, addDays, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, isSameDay } from 'date-fns';
 import CalendarEvent from './CalendarEvent.vue';
 import AddEventModal from './AddEventModal.vue';
@@ -8,8 +8,9 @@ import api from '../services/api';
 const currentDate = ref(new Date());
 const showAddEventModal = ref(false);
 const selectedTimeSlot = ref(null);
+const isLoading = ref(false);
 
-// Shared events store (will be synchronized with TaskPanel)
+// Events store will always be synced with backend
 const events = ref([]);
 
 // Provide the events to child components
@@ -135,12 +136,8 @@ const addEvent = async (newEvent) => {
     const createdEvent = await api.createEvent(eventData);
     
     if (createdEvent.id) {
-      // Update local events
-      events.value.push({
-        ...createdEvent,
-        startTime: createdEvent.start_time, // Keep compatibility with frontend naming
-        endTime: createdEvent.end_time
-      });
+      // Refresh events from the server to ensure consistency
+      await loadEvents();
       
       showAddEventModal.value = false;
       selectedTimeSlot.value = null;
@@ -158,37 +155,56 @@ const toggleEventComplete = async (eventId) => {
   const event = events.value.find(e => e.id === eventId);
   if (event) {
     // Toggle locally first for responsive UI
-    event.completed = !event.completed;
+    const newCompletedState = !event.completed;
     
     try {
       // Send update to API
       await api.updateEvent(eventId, {
         ...event,
-        start_time: event.startTime || event.start_time,
-        end_time: event.endTime || event.end_time
+        completed: newCompletedState,
+        start_time: event.start_time,
+        end_time: event.end_time
       });
+      
+      // Refresh events from the server
+      await loadEvents();
     } catch (error) {
       console.error('Error updating event completion status:', error);
-      // Revert the local change if API call fails
-      event.completed = !event.completed;
+      alert('Error updating event. Please try again.');
     }
+  }
+};
+
+// Delete an event
+const deleteEvent = async (eventId) => {
+  try {
+    await api.deleteEvent(eventId);
+    // Refresh events from the server
+    await loadEvents();
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    alert('Error deleting event. Please try again.');
   }
 };
 
 // Load events from the backend
 const loadEvents = async () => {
+  isLoading.value = true;
   try {
     const fetchedEvents = await api.getEvents();
     
-    // Convert API format to frontend format
+    // Store the events with consistent property names
     events.value = fetchedEvents.map(event => ({
       ...event,
-      startTime: event.start_time, // Add frontend property names for compatibility
+      // Ensure both naming conventions are available for compatibility
+      startTime: event.start_time,
       endTime: event.end_time
     }));
   } catch (error) {
     console.error('Error loading events:', error);
     // Handle error (show notification, etc.)
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -219,8 +235,18 @@ const handleDateSelect = (event) => {
 
 // Mount hook to scroll to current time and load events
 onMounted(() => {
+  loadEvents();
   scrollToCurrentTime();
   setTimeout(scrollToCurrentTime, 100);
+});
+
+// Set up a watcher for currentDate changes to reload events
+watchEffect(() => {
+  // Using currentDate.value in this function creates a dependency
+  // that will re-run this function when currentDate changes
+  if (currentDate.value) {
+    loadEvents();
+  }
 });
 </script>
 
@@ -253,6 +279,11 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Loading indicator -->
+    <div v-if="isLoading" class="text-center py-2 text-blue-400">
+      Loading events...
+    </div>
+
     <!-- Days of Week Header -->
     <div class="calendar-days sticky top-0 z-10 bg-app-dark grid grid-cols-7 text-center text-xs font-semibold border-b border-white/10 pb-2 ml-16">
       <div v-for="day in weekDays" :key="format(day, 'yyyy-MM-dd')">
@@ -260,7 +291,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Calendar + Hour Sidebar Wrapper（可滚动区域）-->
+    <!-- Calendar + Hour Sidebar Wrapper-->
     <div class="calendar-wrapper flex-1 relative overflow-auto">
       <!-- Hours sidebar -->
       <div class="hours-sidebar absolute left-0 top-0 h-[calc(24*60px)] w-16 text-right">
@@ -299,6 +330,7 @@ onMounted(() => {
               :conflict-index="event.conflictIndex || 0"
               :total-conflicts="event.totalConflicts || 1"
               @toggle-complete="toggleEventComplete"
+              @delete-event="deleteEvent"
             />
           </template>
         </div>

@@ -1,14 +1,15 @@
 <script setup>
-import { ref, inject, computed, onMounted } from 'vue';
+import { ref, inject, computed, onMounted, watchEffect } from 'vue';
 import { parseISO, isAfter, addDays, isFuture } from 'date-fns';
 import api from '../services/api';
 
 // Inject the shared events from Calendar component with a fallback empty array
 const calendarEvents = inject('events', ref([]));
 
-// Local task lists
+// Task lists
 const dueTasks = ref([]);
 const inboxTasks = ref([]);
+const isLoading = ref(false);
 
 // Compute the combined task list from calendar events and local tasks
 const combinedDueTasks = computed(() => {
@@ -91,56 +92,75 @@ const toggleTaskComplete = async (taskId) => {
   if (calendarEvents.value) {
     const calendarEvent = calendarEvents.value.find(event => event.id === taskId);
     if (calendarEvent) {
-      // Toggle locally for responsive UI
-      calendarEvent.completed = !calendarEvent.completed;
-      
       try {
         // Update on the backend
         await api.updateEvent(taskId, {
           ...calendarEvent,
+          completed: !calendarEvent.completed,
           start_time: calendarEvent.start_time || calendarEvent.startTime,
           end_time: calendarEvent.end_time || calendarEvent.endTime
         });
+        
+        // No need to manipulate the local state
+        // The Calendar component will refresh the events
+        
+        return;
       } catch (error) {
         console.error('Error updating calendar event:', error);
-        // Revert local change if API call fails
-        calendarEvent.completed = !calendarEvent.completed;
+        alert('Error updating task. Please try again.');
+        return;
       }
-      return;
     }
   }
   
-  // Otherwise, check local tasks
-  const findAndToggleTask = async (tasks, updateFunc) => {
-    const task = tasks.value.find(t => t.id === taskId);
+  // Handle tasks from the task lists
+  const findAndToggleTask = async (tasksList) => {
+    const task = tasksList.value.find(t => t.id === taskId);
     if (task) {
-      // Toggle locally for responsive UI
-      task.completed = !task.completed;
-      
       try {
         // Update on the backend
-        await updateFunc(taskId, {
+        await api.updateTask(taskId, {
           ...task,
+          completed: !task.completed,
           due_date: task.dueDate
         });
+        
+        // Refresh tasks from the server
+        await loadTasks();
         return true;
       } catch (error) {
         console.error('Error updating task:', error);
-        // Revert local change if API call fails
-        task.completed = !task.completed;
+        alert('Error updating task. Please try again.');
         return false;
       }
     }
     return false;
   };
 
-  if (!await findAndToggleTask(dueTasks, api.updateTask)) {
-    await findAndToggleTask(inboxTasks, api.updateTask);
+  if (!await findAndToggleTask(dueTasks)) {
+    await findAndToggleTask(inboxTasks);
+  }
+};
+
+// Delete a task
+const deleteTask = async (taskId) => {
+  if (!confirm('Are you sure you want to delete this task?')) {
+    return;
+  }
+  
+  try {
+    await api.deleteTask(taskId);
+    // Refresh tasks from the server
+    await loadTasks();
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    alert('Error deleting task. Please try again.');
   }
 };
 
 // Load tasks from the backend
 const loadTasks = async () => {
+  isLoading.value = true;
   try {
     const fetchedTasks = await api.getTasks();
     
@@ -169,6 +189,8 @@ const loadTasks = async () => {
       }));
   } catch (error) {
     console.error('Error loading tasks:', error);
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -183,26 +205,16 @@ const addTask = async (task) => {
       completed: false
     };
     
-    const createdTask = await api.createTask(taskData);
+    await api.createTask(taskData);
     
-    // Add to the appropriate list
-    const today = new Date();
-    const dueSoonThreshold = addDays(today, 3);
-    const taskDate = parseISO(createdTask.due_date);
+    // Refresh tasks from the server to ensure consistency
+    await loadTasks();
     
-    if (isFuture(taskDate) && !isAfter(taskDate, dueSoonThreshold)) {
-      dueTasks.value.push({
-        ...createdTask,
-        dueDate: createdTask.due_date
-      });
-    } else {
-      inboxTasks.value.push({
-        ...createdTask,
-        dueDate: createdTask.due_date
-      });
-    }
+    return true;
   } catch (error) {
     console.error('Error creating task:', error);
+    alert('Error creating task. Please try again.');
+    return false;
   }
 };
 
@@ -222,17 +234,19 @@ const newTask = ref({
 
 // Handle form submission
 const handleAddTask = async () => {
-  await addTask(newTask.value);
+  const success = await addTask(newTask.value);
   
-  // Reset form
-  newTask.value = {
-    title: '',
-    dueDate: '',
-    duration: '',
-    tag: 'Inbox'
-  };
-  
-  showAddTaskForm.value = false;
+  if (success) {
+    // Reset form
+    newTask.value = {
+      title: '',
+      dueDate: '',
+      duration: '',
+      tag: 'Inbox'
+    };
+    
+    showAddTaskForm.value = false;
+  }
 };
 </script>
 
@@ -249,6 +263,11 @@ const handleAddTask = async () => {
           <span class="text-sm">+ Add</span>
         </button>
       </div>
+    </div>
+
+    <!-- Loading indicator -->
+    <div v-if="isLoading" class="text-center py-2 text-blue-400 mb-3">
+      Loading tasks...
     </div>
 
     <!-- Add Task Form -->
@@ -315,7 +334,7 @@ const handleAddTask = async () => {
         <div
           v-for="task in combinedDueTasks"
           :key="task.id"
-          class="task-item p-3 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer"
+          class="task-item p-3 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer group"
           :class="{ 'opacity-50': task.completed, 'border-l-4 border-blue-500': task.isCalendarEvent }"
         >
           <div class="flex items-start gap-3">
@@ -325,7 +344,7 @@ const handleAddTask = async () => {
               class="mt-1"
               @change="toggleTaskComplete(task.id)"
             >
-            <div>
+            <div class="flex-grow">
               <h4 class="font-medium" :class="{ 'line-through': task.completed }">
                 {{ task.title }}
               </h4>
@@ -335,6 +354,15 @@ const handleAddTask = async () => {
                 <span>{{ task.duration }}</span>
               </div>
             </div>
+            <!-- Only show delete button for tasks, not events -->
+            <button 
+              v-if="!task.isCalendarEvent"
+              @click="deleteTask(task.id)" 
+              class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
+              title="Delete task"
+            >
+              ×
+            </button>
           </div>
         </div>
       </div>
@@ -347,7 +375,7 @@ const handleAddTask = async () => {
         <div
           v-for="task in combinedInboxTasks"
           :key="task.id"
-          class="task-item p-3 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer"
+          class="task-item p-3 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer group"
           :class="{ 'opacity-50': task.completed, 'border-l-4 border-green-500': task.isCalendarEvent }"
         >
           <div class="flex items-start gap-3">
@@ -357,7 +385,7 @@ const handleAddTask = async () => {
               class="mt-1"
               @change="toggleTaskComplete(task.id)"
             >
-            <div>
+            <div class="flex-grow">
               <h4 class="font-medium" :class="{ 'line-through': task.completed }">
                 {{ task.title }}
               </h4>
@@ -367,6 +395,15 @@ const handleAddTask = async () => {
                 <span>{{ task.duration }}</span>
               </div>
             </div>
+            <!-- Only show delete button for tasks, not events -->
+            <button 
+              v-if="!task.isCalendarEvent"
+              @click="deleteTask(task.id)" 
+              class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
+              title="Delete task"
+            >
+              ×
+            </button>
           </div>
         </div>
       </div>

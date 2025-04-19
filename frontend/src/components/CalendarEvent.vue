@@ -16,12 +16,38 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['toggle-complete']);
+const emit = defineEmits(['toggle-complete', 'delete-event']);
 
-const handleCheckboxClick = (e) => {
-  e.stopPropagation();
+const toggleComplete = () => {
   emit('toggle-complete', props.event.id);
 };
+
+const deleteEvent = () => {
+  if (confirm('Are you sure you want to delete this event?')) {
+    emit('delete-event', props.event.id);
+  }
+};
+
+// Calculate position based on time
+const startTime = props.event.startTime || props.event.start_time;
+const endTime = props.event.endTime || props.event.end_time;
+
+const [startHour, startMinute = '0'] = startTime.split(':');
+const [endHour, endMinute = '0'] = endTime.split(':');
+
+const startPosition = parseInt(startHour) * 60 + parseInt(startMinute);
+const endPosition = parseInt(endHour) * 60 + parseInt(endMinute);
+const duration = endPosition - startPosition;
+
+// Calculate width when there are conflicts
+const width = props.totalConflicts > 1 
+  ? `calc((100% / ${props.totalConflicts}) - 4px)` 
+  : 'calc(100% - 8px)';
+
+// Calculate left offset for conflicts
+const leftOffset = props.totalConflicts > 1 
+  ? `calc((100% / ${props.totalConflicts}) * ${props.conflictIndex})` 
+  : '0';
 
 // Calculate the position and dimensions based on event time
 const eventStyles = computed(() => {
@@ -69,27 +95,37 @@ const eventStyles = computed(() => {
 </script>
 
 <template>
-  <div 
-    class="task-card absolute rounded-md p-2 border-l-4 overflow-hidden"
+  <div
+    class="task-card calendar-event absolute rounded-md px-2 py-1 text-xs overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
     :class="[
       event.color || 'bg-gray-800/80',
-      event.completed ? 'opacity-50' : ''
+      { 'line-through opacity-50': event.completed }
     ]"
-    :style="eventStyles"
-    @click.stop
+    :style="{
+      top: `${startPosition}px`,
+      height: `${duration}px`,
+      left: leftOffset,
+      width: width,
+      zIndex: '10'
+    }"
   >
-    <div class="flex items-center gap-2">
-      <input 
-        type="checkbox" 
+    <div class="flex justify-between items-center mb-1">
+      <input
+        type="checkbox"
         :checked="event.completed"
-        class="rounded-sm"
-        @click="handleCheckboxClick"
+        @click.stop="toggleComplete"
+        class="mr-1 h-3 w-3"
+      />
+      <button 
+        @click.stop="deleteEvent" 
+        class="text-gray-300 hover:text-white transition-colors ml-auto"
+        title="Delete event"
       >
-      <span :class="{ 'line-through': event.completed }" class="text-sm font-medium truncate">{{ event.title }}</span>
+        ×
+      </button>
     </div>
-    <div class="text-xs text-gray-400 ml-5 truncate">
-      {{ event.startTime }} - {{ event.endTime }}
-    </div>
+    <div class="text-white font-medium">{{ event.title }}</div>
+    <div class="text-gray-300">{{ startTime }} - {{ endTime }}</div>
   </div>
 </template>
 
