@@ -1,0 +1,116 @@
+/* Theme Variables */
+:root {
+  /* Will be set dynamically by useTheme.js */
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #2d2d2d;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --border-color: #333333;
+  --event-bg: rgba(82, 158, 212, 0.8);
+  --event-bg-hover: rgba(82, 158, 212, 0.9);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --grid-line-color: rgba(255, 255, 255, 0.1);
+  
+  /* Common variables that don't change between themes */
+  --primary-color: #529ed4;
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --error-color: #f44336;
+  
+  /* Transitions */
+  --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Apply transitions to common elements */
+body,
+.app-container,
+.calendar-container,
+.sidebar,
+.header,
+.task-card,
+button,
+input,
+select,
+textarea,
+td,
+th,
+tr,
+table,
+.calendar-day-header,
+.calendar-grid,
+.calendar-time-scale {
+  transition: var(--theme-transition);
+}
+
+/* Force body to use theme colors */
+body, html {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* Base theme classes for elements */
+.card, 
+.panel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px var(--shadow-color);
+}
+
+input, 
+select, 
+textarea {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+input::placeholder, 
+select::placeholder, 
+textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+button.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Calendar specific styles */
+.calendar-container {
+  background-color: var(--bg-primary);
+}
+
+.calendar-day-header {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-grid td,
+.calendar-grid th {
+  border-color: var(--grid-line-color);
+}
+
+.calendar-time-scale {
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border-color);
+}
+
+/* Dark theme class for explicit theme override */
+.dark-theme {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Light theme class for explicit theme override */
+.light-theme {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Light theme specific overrides are handled by useTheme.js */ 

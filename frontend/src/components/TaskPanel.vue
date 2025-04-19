@@ -251,27 +251,27 @@ const handleAddTask = async () => {
 </script>
 
 <template>
-  <section class="w-[320px] p-4 border-r border-app-light overflow-y-auto bg-app-dark">
+  <section class="task-panel w-[320px] p-4 overflow-y-auto">
     <!-- Header -->
     <div class="header flex justify-between items-center mb-6">
       <h2 class="text-lg font-semibold">Tasks</h2>
       <div class="actions space-x-2">
-        <button class="p-2 bg-app-light rounded-lg hover:bg-app-hover">
+        <button class="task-button p-2 rounded-lg">
           <span class="text-sm">Filter</span>
         </button>
-        <button class="p-2 bg-app-light rounded-lg hover:bg-app-hover" @click="showAddTaskForm = true">
+        <button class="task-button p-2 rounded-lg" @click="showAddTaskForm = true">
           <span class="text-sm">+ Add</span>
         </button>
       </div>
     </div>
 
     <!-- Loading indicator -->
-    <div v-if="isLoading" class="text-center py-2 text-blue-400 mb-3">
+    <div v-if="isLoading" class="text-center py-2 loading-indicator mb-3">
       Loading tasks...
     </div>
 
     <!-- Add Task Form -->
-    <div v-if="showAddTaskForm" class="mb-4 p-3 bg-app-light rounded-lg">
+    <div v-if="showAddTaskForm" class="add-task-form mb-4 p-3 rounded-lg">
       <h3 class="text-sm font-medium mb-2">Add New Task</h3>
       <form @submit.prevent="handleAddTask">
         <div class="mb-2">
@@ -279,7 +279,7 @@ const handleAddTask = async () => {
             v-model="newTask.title"
             type="text"
             placeholder="Task title"
-            class="w-full p-2 rounded border border-gray-600 bg-app-dark"
+            class="w-full p-2 rounded border form-input"
             required
           />
         </div>
@@ -287,7 +287,7 @@ const handleAddTask = async () => {
           <input
             v-model="newTask.dueDate"
             type="date"
-            class="w-full p-2 rounded border border-gray-600 bg-app-dark"
+            class="w-full p-2 rounded border form-input"
             required
           />
         </div>
@@ -296,14 +296,14 @@ const handleAddTask = async () => {
             v-model="newTask.duration"
             type="text"
             placeholder="Duration (e.g. 1h 30m)"
-            class="w-full p-2 rounded border border-gray-600 bg-app-dark"
+            class="w-full p-2 rounded border form-input"
             required
           />
         </div>
         <div class="mb-2">
           <select
             v-model="newTask.tag"
-            class="w-full p-2 rounded border border-gray-600 bg-app-dark"
+            class="w-full p-2 rounded border form-input"
           >
             <option value="Due soon">Due soon</option>
             <option value="Inbox">Inbox</option>
@@ -313,13 +313,13 @@ const handleAddTask = async () => {
           <button
             type="button"
             @click="showAddTaskForm = false"
-            class="px-3 py-1 border border-gray-600 rounded text-sm"
+            class="cancel-button px-3 py-1 border rounded text-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
-            class="px-3 py-1 bg-blue-600 rounded text-sm text-white"
+            class="save-button px-3 py-1 rounded text-sm text-white"
           >
             Save
           </button>
@@ -329,26 +329,26 @@ const handleAddTask = async () => {
 
     <!-- Due Soon Section -->
     <div class="task-section mb-8">
-      <h3 class="text-sm text-gray-500 font-medium uppercase mb-3">Due Soon</h3>
+      <h3 class="task-section-title text-sm font-medium uppercase mb-3">Due Soon</h3>
       <div class="space-y-2">
         <div
           v-for="task in combinedDueTasks"
           :key="task.id"
-          class="task-item p-3 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer group"
-          :class="{ 'opacity-50': task.completed, 'border-l-4 border-blue-500': task.isCalendarEvent }"
+          class="task-item p-3 rounded-lg cursor-pointer group"
+          :class="{ 'completed': task.completed, 'calendar-event': task.isCalendarEvent }"
         >
           <div class="flex items-start gap-3">
             <input
               type="checkbox"
               :checked="task.completed"
-              class="mt-1"
+              class="task-checkbox mt-1"
               @change="toggleTaskComplete(task.id)"
             >
             <div class="flex-grow">
-              <h4 class="font-medium" :class="{ 'line-through': task.completed }">
+              <h4 class="task-title font-medium" :class="{ 'line-through': task.completed }">
                 {{ task.title }}
               </h4>
-              <div class="flex gap-2 mt-1 text-sm text-gray-400">
+              <div class="task-details flex gap-2 mt-1 text-sm">
                 <span>{{ task.dueDate }}</span>
                 <span>·</span>
                 <span>{{ task.duration }}</span>
@@ -358,7 +358,7 @@ const handleAddTask = async () => {
             <button 
               v-if="!task.isCalendarEvent"
               @click="deleteTask(task.id)" 
-              class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
+              class="delete-button opacity-0 group-hover:opacity-100 transition-opacity"
               title="Delete task"
             >
               ×
@@ -370,26 +370,26 @@ const handleAddTask = async () => {
 
     <!-- Inbox Section -->
     <div class="task-section">
-      <h3 class="text-sm text-gray-500 font-medium uppercase mb-3">Inbox</h3>
+      <h3 class="task-section-title text-sm font-medium uppercase mb-3">Inbox</h3>
       <div class="space-y-2">
         <div
           v-for="task in combinedInboxTasks"
           :key="task.id"
-          class="task-item p-3 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer group"
-          :class="{ 'opacity-50': task.completed, 'border-l-4 border-green-500': task.isCalendarEvent }"
+          class="task-item p-3 rounded-lg cursor-pointer group"
+          :class="{ 'completed': task.completed, 'calendar-event-inbox': task.isCalendarEvent }"
         >
           <div class="flex items-start gap-3">
             <input
               type="checkbox"
               :checked="task.completed"
-              class="mt-1"
+              class="task-checkbox mt-1"
               @change="toggleTaskComplete(task.id)"
             >
             <div class="flex-grow">
-              <h4 class="font-medium" :class="{ 'line-through': task.completed }">
+              <h4 class="task-title font-medium" :class="{ 'line-through': task.completed }">
                 {{ task.title }}
               </h4>
-              <div class="flex gap-2 mt-1 text-sm text-gray-400">
+              <div class="task-details flex gap-2 mt-1 text-sm">
                 <span>{{ task.dueDate }}</span>
                 <span>·</span>
                 <span>{{ task.duration }}</span>
@@ -399,7 +399,7 @@ const handleAddTask = async () => {
             <button 
               v-if="!task.isCalendarEvent"
               @click="deleteTask(task.id)" 
-              class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white"
+              class="delete-button opacity-0 group-hover:opacity-100 transition-opacity"
               title="Delete task"
             >
               ×
@@ -410,3 +410,94 @@ const handleAddTask = async () => {
     </div>
   </section>
 </template>
+
+<style scoped>
+.task-panel {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-right: 1px solid var(--border-color);
+  transition: var(--theme-transition);
+}
+
+.task-button {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: var(--theme-transition);
+}
+
+.task-button:hover {
+  background-color: var(--primary-color);
+  opacity: 0.9;
+}
+
+.loading-indicator {
+  color: var(--primary-color);
+}
+
+.add-task-form {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.form-input {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.cancel-button {
+  background-color: transparent;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.save-button {
+  background-color: var(--primary-color);
+}
+
+.task-section-title {
+  color: var(--text-secondary);
+}
+
+.task-item {
+  background-color: var(--bg-tertiary);
+  transition: var(--theme-transition);
+}
+
+.task-item:hover {
+  background-color: var(--bg-primary);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.task-item.completed {
+  opacity: 0.5;
+}
+
+.task-title {
+  color: var(--text-primary);
+}
+
+.task-details {
+  color: var(--text-secondary);
+}
+
+.task-checkbox {
+  accent-color: var(--primary-color);
+}
+
+.delete-button {
+  color: var(--text-secondary);
+}
+
+.delete-button:hover {
+  color: var(--text-primary);
+}
+
+.calendar-event {
+  border-left: 4px solid var(--primary-color);
+}
+
+.calendar-event-inbox {
+  border-left: 4px solid var(--success-color);
+}
+</style>

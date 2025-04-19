@@ -15,13 +15,13 @@ const setActive = (iconId) => {
 </script>
 
 <template>
-  <aside class="w-14 flex flex-col items-center bg-app-light py-4">
+  <aside class="sidebar w-14 flex flex-col items-center py-4">
     <nav class="space-y-6 flex-1">
       <button
         v-for="item in icons"
         :key="item.id"
-        class="w-10 h-10 flex items-center justify-center rounded-lg transition-colors"
-        :class="activeIcon === item.id ? 'bg-app-hover text-white' : 'text-gray-400 hover:bg-app-hover/50'"
+        class="nav-button w-10 h-10 flex items-center justify-center rounded-lg transition-colors"
+        :class="{ 'active': activeIcon === item.id }"
         @click="setActive(item.id)"
         :title="item.label"
       >
@@ -31,11 +31,44 @@ const setActive = (iconId) => {
     
     <div class="mt-auto">
       <button 
-        class="w-10 h-10 rounded-full bg-app-hover flex items-center justify-center"
+        class="account-button w-10 h-10 rounded-full flex items-center justify-center"
         title="Account"
       >
         <span class="text-xl">👤</span>
       </button>
     </div>
   </aside>
-</template> 
+</template>
+
+<style scoped>
+.sidebar {
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  transition: var(--theme-transition);
+}
+
+.nav-button {
+  color: var(--text-secondary);
+}
+
+.nav-button:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.nav-button.active {
+  background-color: var(--primary-color, #529ed4);
+  color: white;
+}
+
+.account-button {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: var(--theme-transition);
+}
+
+.account-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px var(--shadow-color);
+}
+</style> 

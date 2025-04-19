@@ -251,7 +251,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <section class="flex flex-col flex-1 p-4">
+  <section class="calendar-container flex flex-col flex-1 p-4">
     <!-- Calendar Header -->
     <div class="calendar-header flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold">{{ format(currentDate, 'MMMM yyyy') }}</h2>
@@ -260,17 +260,17 @@ watchEffect(() => {
           type="date"
           :value="format(currentDate, 'yyyy-MM-dd')"
           @change="handleDateSelect"
-          class="px-4 py-2 bg-app-light rounded-lg hover:bg-app-hover cursor-pointer"
+          class="date-picker px-4 py-2 rounded-lg cursor-pointer"
         >
         <div class="flex gap-1">
           <button 
-            class="p-2 bg-app-light rounded-lg hover:bg-app-hover"
+            class="nav-button p-2 rounded-lg"
             @click="navigatePrevious"
           >
             ←
           </button>
           <button 
-            class="p-2 bg-app-light rounded-lg hover:bg-app-hover"
+            class="nav-button p-2 rounded-lg"
             @click="navigateNext"
           >
             →
@@ -280,12 +280,12 @@ watchEffect(() => {
     </div>
 
     <!-- Loading indicator -->
-    <div v-if="isLoading" class="text-center py-2 text-blue-400">
+    <div v-if="isLoading" class="text-center py-2 loading-indicator">
       Loading events...
     </div>
 
     <!-- Days of Week Header -->
-    <div class="calendar-days sticky top-0 z-10 bg-app-dark grid grid-cols-7 text-center text-xs font-semibold border-b border-white/10 pb-2 ml-16">
+    <div class="calendar-days sticky top-0 z-10 grid grid-cols-7 text-center text-xs font-semibold pb-2 ml-16">
       <div v-for="day in weekDays" :key="format(day, 'yyyy-MM-dd')">
         {{ formatDay(day) }}
       </div>
@@ -300,24 +300,24 @@ watchEffect(() => {
           :key="slot.hour"
           class="h-[60px] flex items-center justify-end pr-4"
         >
-          <span class="text-xs text-white">{{ slot.label }}</span>
+          <span class="text-xs time-label">{{ slot.label }}</span>
         </div>
       </div>
 
       <!-- Calendar grid -->
       <div
-        class="calendar-grid grid grid-cols-7 border border-white/10 h-[calc(24*60px)] overflow-y-auto mt-2 ml-16"
+        class="calendar-grid grid grid-cols-7 h-[calc(24*60px)] overflow-y-auto mt-2 ml-16"
       >
         <div
           v-for="day in weekDays"
           :key="format(day, 'yyyy-MM-dd')"
-          class="day-column border-r border-white/10 relative"
+          class="day-column relative"
         >
           <!-- Time slots -->
           <div
             v-for="slot in timeSlots"
             :key="format(day, 'yyyy-MM-dd') + '-' + slot.hour"
-            class="time-slot h-[60px] border-b border-white/10 relative group hover:bg-gray-50/5 cursor-pointer"
+            class="time-slot h-[60px] relative group cursor-pointer"
             @click="handleTimeSlotClick(day, slot.hour)"
           >
             <!-- Slot content is empty to allow clicking -->
@@ -348,6 +348,36 @@ watchEffect(() => {
 </template>
 
 <style scoped>
+.calendar-container {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.calendar-header h2 {
+  color: var(--text-primary);
+}
+
+.date-picker, .nav-button {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  transition: var(--theme-transition);
+}
+
+.date-picker:hover, .nav-button:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.loading-indicator {
+  color: var(--primary-color);
+}
+
+.calendar-days {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
 .calendar-wrapper {
   position: relative;
   width: 100%;
@@ -355,21 +385,31 @@ watchEffect(() => {
   -ms-overflow-style: none;
 }
 
+.time-label {
+  color: var(--text-secondary);
+}
+
 .calendar-grid {
   position: relative;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid var(--grid-line-color);
+  border-right: 1px solid var(--grid-line-color);
+  border-bottom: 1px solid var(--grid-line-color);
   z-index: 1;
 }
 
 .time-slot {
   transition: background-color 0.2s;
   z-index: 2;
+  border-bottom: 1px solid var(--grid-line-color);
 }
 
 .time-slot:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--bg-tertiary);
+  opacity: 0.7;
+}
+
+.day-column {
+  border-right: 1px solid var(--grid-line-color);
 }
 
 .day-column:last-child {

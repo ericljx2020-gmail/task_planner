@@ -98,8 +98,8 @@ const eventStyles = computed(() => {
   <div
     class="task-card calendar-event absolute rounded-md px-2 py-1 text-xs overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
     :class="[
-      event.color || 'bg-gray-800/80',
-      { 'line-through opacity-50': event.completed }
+      event.color || 'default-event-color',
+      { 'completed-event': event.completed }
     ]"
     :style="{
       top: `${startPosition}px`,
@@ -114,34 +114,68 @@ const eventStyles = computed(() => {
         type="checkbox"
         :checked="event.completed"
         @click.stop="toggleComplete"
-        class="mr-1 h-3 w-3"
+        class="mr-1 h-3 w-3 event-checkbox"
       />
       <button 
         @click.stop="deleteEvent" 
-        class="text-gray-300 hover:text-white transition-colors ml-auto"
+        class="text-gray-300 hover:text-white transition-colors ml-auto delete-button"
         title="Delete event"
       >
         ×
       </button>
     </div>
-    <div class="text-white font-medium">{{ event.title }}</div>
-    <div class="text-gray-300">{{ startTime }} - {{ endTime }}</div>
+    <div class="event-title">{{ event.title }}</div>
+    <div class="event-time">{{ startTime }} - {{ endTime }}</div>
   </div>
 </template>
 
 <style scoped>
 .task-card {
-  background-color: rgba(30, 30, 30, 0.8);
+  background-color: var(--event-bg, rgba(82, 158, 212, 0.8));
   backdrop-filter: blur(4px);
   min-width: 100px;
   min-height: 30px;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px var(--shadow-color, rgba(0, 0, 0, 0.2));
+  color: var(--text-primary, #ffffff);
 }
 
 .task-card:hover {
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--shadow-color, rgba(0, 0, 0, 0.3));
   transform: scale(1.02);
+  background-color: var(--event-bg-hover, rgba(82, 158, 212, 0.9));
+}
+
+.event-title {
+  font-weight: 500;
+  color: var(--text-primary, #ffffff);
+}
+
+.event-time {
+  color: var(--text-secondary, #e1e1e1);
+  font-size: 0.75rem;
+}
+
+.completed-event {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.default-event-color {
+  background-color: var(--event-bg);
+}
+
+.delete-button {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.delete-button:hover {
+  opacity: 1;
+}
+
+.event-checkbox {
+  cursor: pointer;
 }
 </style>
