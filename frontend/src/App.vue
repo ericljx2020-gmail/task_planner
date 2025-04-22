@@ -6,6 +6,8 @@ import TaskPanel from './components/TaskPanel.vue'
 import LoginForm from './components/LoginForm.vue'
 import api from './services/api'
 import ThemeToggle from './components/ThemeToggle.vue'
+import ChatBox from './components/ChatBox.vue'
+import { useKeyHandler } from './composables/useKeyHandler'
 import './assets/theme.css'
 import { useTheme } from './composables/useTheme'
 
@@ -18,6 +20,9 @@ const isLoading = ref(true); // Add loading state
 
 // Initialize theme system
 const { theme } = useTheme();
+
+// Initialize key handler for chat toggle
+const { isShiftEnterPressed } = useKeyHandler();
 
 // Check if user is logged in on page load
 const checkAuth = async () => {
@@ -52,6 +57,11 @@ const handleLogout = async () => {
   } catch (error) {
     console.error('Logout error:', error);
   }
+};
+
+// Close chat box
+const closeChat = () => {
+  isShiftEnterPressed.value = false;
 };
 
 // Check authentication on component mount
@@ -106,6 +116,9 @@ onMounted(async () => {
         <TaskPanel />
         <Calendar class="flex-1" />
       </main>
+      
+      <!-- Chat Box Component -->
+      <ChatBox :visible="isShiftEnterPressed" @close="closeChat" />
     </template>
   </div>
 </template>

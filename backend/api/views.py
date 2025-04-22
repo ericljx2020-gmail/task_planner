@@ -8,6 +8,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from .models import CalendarEvent, Task, UserProfile
 from .serializers import UserSerializer, UserProfileSerializer, CalendarEventSerializer, TaskSerializer
+import json
+from rest_framework.views import APIView
+from django.conf import settings
+import os
+import re
 
 # Create your views here.
 
@@ -111,3 +116,85 @@ def get_csrf_token(request):
     from django.middleware.csrf import get_token
     get_token(request)
     return Response({"detail": "CSRF cookie set"}, status=status.HTTP_200_OK)
+
+class ChatAddEventView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        query = request.data.get('query')
+        if not query:
+            return Response(
+                {'success': False, 'error': 'No query provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Get the API key from environment
+            api_key = os.environ.get('OPENAI_API_KEY')
+            if not api_key:
+                return Response(
+                    {'success': False, 'error': 'OpenAI API key not configured'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # Use OpenAI client directly instead of LangChain
+            import openai
+            client = openai.OpenAI(api_key=api_key)
+            
+            # Define the system prompt and user query
+            prompt = """
+            Extract event details from the user description in JSON format with keys: 
+            title, date, start_time, end_time.
+            
+            The date should be in YYYY-MM-DD format, and times should be in 24-hour HH:MM format.
+            If no specific date is mentioned, use today's date.
+            If no end time is specified, make the event 1 hour after the start time.
+            
+            Respond only with a valid JSON object, nothing else.
+            """
+            
+            # Call the API
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": query}
+                ],
+                temperature=0
+            )
+            
+            # Extract the response text
+            result = response.choices[0].message.content.strip()
+            
+            # Parse the JSON response
+            try:
+                details = json.loads(result)
+            except json.JSONDecodeError:
+                # If JSON parsing fails, try to extract just the JSON part
+                import re
+                json_match = re.search(r'({.*})', result, re.DOTALL)
+                if json_match:
+                    details = json.loads(json_match.group(1))
+                else:
+                    return Response(
+                        {'success': False, 'error': 'Failed to parse AI response'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+            
+            # Create the event
+            event = CalendarEvent.objects.create(
+                title=details.get('title', 'Untitled Event'),
+                date=details.get('date'),
+                start_time=details.get('start_time'),
+                end_time=details.get('end_time'),
+                user=request.user
+            )
+            
+            serializer = CalendarEventSerializer(event)
+            return Response({'success': True, 'event': serializer.data})
+            
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

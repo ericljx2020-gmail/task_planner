@@ -310,5 +310,32 @@ export default {
       console.error('Delete task error:', error);
       throw error;
     }
+  },
+  
+  // Chat-driven event creation
+  async createEventFromChat(query) {
+    try {
+      // Make sure we have a CSRF token
+      await ensureCSRFToken();
+      
+      const response = await fetch(`${API_URL}/chat/add_event/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRFToken(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({ query }),
+      });
+      
+      if (response.status === 403) {
+        throw new Error('Authentication required');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Chat event creation error:', error);
+      throw error;
+    }
   }
 }; 

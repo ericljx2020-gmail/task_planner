@@ -21,6 +21,9 @@ urlpatterns = [
     path('auth/user/', views.get_user_info, name='user-info'),
     path('csrf-token/', views.get_csrf_token, name='csrf-token'),
     
+    # Chat-driven event creation
+    path('chat/add_event/', views.ChatAddEventView.as_view(), name='chat-add-event'),
+    
     # DRF authentication
     path('api-auth/', include('rest_framework.urls')),
 ] 
